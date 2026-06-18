@@ -1,32 +1,24 @@
 import React,{useState} from 'react'
-//create an dumy Login page for now
-
 import { useNavigate, Link } from 'react-router'
 import "../auth.form.scss"
 import { useAuth } from '../hooks/useAuth'
- 
 
 const Login = () => {
-
-    //const navigate = useNavigate()
 
     const { loading, handleLogin } = useAuth()
     const navigate = useNavigate()
 
-    //2-way binding
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
+    const [ email, setEmail ] = useState("")
+    const [ password, setPassword ] = useState("")
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        //prevents refreshing the page on form submission
         await handleLogin({email,password})
         navigate('/')
     }
 
     if(loading){
-        return (<main><h1>Loading....</h1></main>
-        )
+        return (<main><h1>Loading.......</h1></main>)
     }
 
 
@@ -34,13 +26,9 @@ const Login = () => {
         <main>
             <div className="form-container">
                 <h1>Login</h1>
-
                 <form onSubmit={handleSubmit}>
-
                     <div className="input-group">
-                        <label htmlFor="email">
-                            Email
-                        </label>
+                        <label htmlFor="email">Email</label>
                         <input
                             onChange={(e) => { setEmail(e.target.value) }}
                             type="email" id="email" name='email' placeholder='Enter email address' />
@@ -51,11 +39,9 @@ const Login = () => {
                             onChange={(e) => { setPassword(e.target.value) }}
                             type="password" id="password" name='password' placeholder='Enter password' />
                     </div>
-
-                    <button className="button primary-button">Login</button>
+                    <button className='button primary-button' >Login</button>
                 </form>
-
-                <p>Not registered yet? <Link to={"/register"}>Register</Link></p>
+                <p>Don't have an account? <Link to={"/register"} >Register</Link> </p>
             </div>
         </main>
     )
