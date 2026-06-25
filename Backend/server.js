@@ -1,16 +1,12 @@
-require("dotenv").config();// Load environment variables from a .env file into process.env
+require("dotenv").config();
 
-const app = require("./src/app"); // Import the Express app from src/app.js
+const app = require("./src/app");
+const connectToDB = require("./src/config/database");
 
-const connectToDB = require("./src/config/database"); // Import the function to connect to the MongoDB database from src/config/database.js
+connectToDB();
 
+const PORT = process.env.PORT || 3000;
 
-
-
-
-connectToDB(); // Call the function to connect to the MongoDB database
-
-
-app.listen(3000,() => {
-    console.log("Server is running on port 3000");
-}) // Start the server on port 3000 and log a message when it's running
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
