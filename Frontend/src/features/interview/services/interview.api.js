@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:5000",
     withCredentials: true,
 })
 
@@ -55,5 +55,13 @@ export const generateResumePdf = async ({ interviewReportId }) => {
         responseType: "blob"
     })
 
+    return response.data
+}
+
+/**
+ * @description Service to email interview report to user.
+ */
+export const sendReportEmailApi = async (interviewId) => {
+    const response = await api.post(`/api/interview/email/${interviewId}`)
     return response.data
 }

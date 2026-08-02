@@ -4,9 +4,26 @@ const cors = require("cors")
 
 const app = express()
 
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174"
+].filter(Boolean)
+
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors())
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true)
+        } else {
+            callback(null, true)
+        }
+    },
+    credentials: true
+}))
 
 /* require all the routes here */
 const authRouter = require("./routes/auth.routes")

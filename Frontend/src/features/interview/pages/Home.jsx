@@ -4,36 +4,91 @@ import { useInterview } from '../hooks/useInterview.js'
 import { useNavigate } from 'react-router'
 
 const Home = () => {
-
-    const { loading, generateReport,reports } = useInterview()
+    const { loading, generateReport, reports } = useInterview()
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
-    const resumeInputRef = useRef()
+    const [ selectedFile, setSelectedFile ] = useState(null)
+    const [ errorMsg, setErrorMsg ] = useState("")
 
+    const resumeInputRef = useRef()
     const navigate = useNavigate()
 
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0])
+            setErrorMsg("")
+        }
+    }
+
+    const handleRemoveFile = (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        setSelectedFile(null)
+        if (resumeInputRef.current) {
+            resumeInputRef.current.value = ""
+        }
+    }
+
     const handleGenerateReport = async () => {
-        const resumeFile = resumeInputRef.current.files[ 0 ]
-        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        navigate(`/interview/${data._id}`)
+        setErrorMsg("")
+
+        if (!jobDescription.trim()) {
+            setErrorMsg("Please paste a Target Job Description.")
+            return
+        }
+
+        const resumeFile = selectedFile || (resumeInputRef.current?.files ? resumeInputRef.current.files[0] : null)
+
+        if (!resumeFile && !selfDescription.trim()) {
+            setErrorMsg("Please provide either a Resume file OR a Quick Self-Description.")
+            return
+        }
+
+        const res = await generateReport({
+            jobDescription: jobDescription.trim(),
+            selfDescription: selfDescription.trim(),
+            resumeFile
+        })
+
+        if (res && res.success && res.report && res.report._id) {
+            navigate(`/interview/${res.report._id}`)
+        } else {
+            setErrorMsg(res?.error || "Failed to generate report. Please try again.")
+        }
     }
 
     if (loading) {
         return (
             <main className='loading-screen'>
-                <h1>Loading your interview plan...</h1>
+                <h1>Analyzing profile & generating your AI interview strategy...</h1>
+                <p style={{ color: "#94a3b8", marginTop: "12px" }}>This typically takes ~15-20 seconds. Please hold on!</p>
             </main>
         )
     }
 
     return (
         <div className='home-page'>
-
             {/* Page Header */}
             <header className='page-header'>
                 <h1>Create Your Custom <span className='highlight'>Interview Plan</span></h1>
                 <p>Let our AI analyze the job requirements and your unique profile to build a winning strategy.</p>
             </header>
+
+            {/* Error Notification */}
+            {errorMsg && (
+                <div style={{
+                    maxWidth: "1000px",
+                    margin: "0 auto 20px auto",
+                    padding: "12px 18px",
+                    backgroundColor: "#fee2e2",
+                    color: "#991b1b",
+                    borderRadius: "8px",
+                    fontWeight: "500",
+                    border: "1px solid #fca5a5"
+                }}>
+                    ✕ {errorMsg}
+                </div>
+            )}
 
             {/* Main Card */}
             <div className='interview-card'>
@@ -49,12 +104,13 @@ const Home = () => {
                             <span className='badge badge--required'>Required</span>
                         </div>
                         <textarea
-                            onChange={(e) => { setJobDescription(e.target.value) }}
+                            value={jobDescription}
+                            onChange={(e) => setJobDescription(e.target.value)}
                             className='panel__textarea'
                             placeholder={`Paste the full job description here...\ne.g. 'Senior Frontend Engineer at Google requires proficiency in React, TypeScript, and large-scale system design...'`}
                             maxLength={5000}
                         />
-                        <div className='char-counter'>0 / 5000 chars</div>
+                        <div className='char-counter'>{jobDescription.length} / 5000 chars</div>
                     </div>
 
                     {/* Vertical Divider */}
@@ -75,13 +131,66 @@ const Home = () => {
                                 Upload Resume
                                 <span className='badge badge--best'>Best Results</span>
                             </label>
-                            <label className='dropzone' htmlFor='resume'>
-                                <span className='dropzone__icon'>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
-                                </span>
-                                <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
-                                <p className='dropzone__subtitle'>PDF or DOCX (Max 5MB)</p>
-                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' />
+
+                            <label className='dropzone' htmlFor='resume' style={{
+                                borderColor: selectedFile ? "#6366f1" : undefined,
+                                backgroundColor: selectedFile ? "rgba(99, 102, 241, 0.08)" : undefined
+                            }}>
+                                {selectedFile ? (
+                                    <div style={{ textAlign: "center", width: "100%" }}>
+                                        <div style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                            backgroundColor: "#1e293b",
+                                            color: "#818cf8",
+                                            padding: "8px 14px",
+                                            borderRadius: "8px",
+                                            fontWeight: "600",
+                                            fontSize: "0.95rem"
+                                        }}>
+                                            <span>📄</span>
+                                            <span style={{ maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                {selectedFile.name}
+                                            </span>
+                                            <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>
+                                                ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+                                            </span>
+                                        </div>
+                                        <div style={{ marginTop: "10px" }}>
+                                            <button
+                                                onClick={handleRemoveFile}
+                                                style={{
+                                                    background: "none",
+                                                    border: "none",
+                                                    color: "#f87171",
+                                                    cursor: "pointer",
+                                                    fontSize: "0.85rem",
+                                                    textDecoration: "underline"
+                                                }}
+                                            >
+                                                Remove file
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <span className='dropzone__icon'>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
+                                        </span>
+                                        <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
+                                        <p className='dropzone__subtitle'>PDF or DOCX (Max 5MB)</p>
+                                    </>
+                                )}
+                                <input
+                                    ref={resumeInputRef}
+                                    onChange={handleFileChange}
+                                    hidden
+                                    type='file'
+                                    id='resume'
+                                    name='resume'
+                                    accept='.pdf,.docx'
+                                />
                             </label>
                         </div>
 
@@ -92,7 +201,8 @@ const Home = () => {
                         <div className='self-description'>
                             <label className='section-label' htmlFor='selfDescription'>Quick Self-Description</label>
                             <textarea
-                                onChange={(e) => { setSelfDescription(e.target.value) }}
+                                value={selfDescription}
+                                onChange={(e) => setSelfDescription(e.target.value)}
                                 id='selfDescription'
                                 name='selfDescription'
                                 className='panel__textarea panel__textarea--short'
@@ -112,7 +222,7 @@ const Home = () => {
 
                 {/* Card Footer */}
                 <div className='interview-card__footer'>
-                    <span className='footer-info'>AI-Powered Strategy Generation &bull; Approx 30s</span>
+                    <span className='footer-info'>AI-Powered Strategy Generation &bull; Approx 15-20s</span>
                     <button
                         onClick={handleGenerateReport}
                         className='generate-btn'>
@@ -123,7 +233,7 @@ const Home = () => {
             </div>
 
             {/* Recent Reports List */}
-            {reports.length > 0 && (
+            {reports && reports.length > 0 && (
                 <section className='recent-reports'>
                     <h2>My Recent Interview Plans</h2>
                     <ul className='reports-list'>

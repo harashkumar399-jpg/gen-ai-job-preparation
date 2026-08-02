@@ -1,47 +1,73 @@
-import React,{useState} from 'react'
+import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router'
 import "../auth.form.scss"
 import { useAuth } from '../hooks/useAuth'
 
 const Login = () => {
-
     const { loading, handleLogin } = useAuth()
     const navigate = useNavigate()
 
     const [ email, setEmail ] = useState("")
     const [ password, setPassword ] = useState("")
+    const [ error, setError ] = useState("")
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        await handleLogin({email,password})
-        navigate('/')
+        setError("")
+
+        if (!email || !password) {
+            setError("Please provide both email and password.")
+            return
+        }
+
+        const res = await handleLogin({ email, password })
+        if (res && res.success) {
+            navigate('/')
+        } else {
+            setError(res?.error || "Login failed. Please check your credentials.")
+        }
     }
 
-    if(loading){
-        return (<main><h1>Loading.......</h1></main>)
+    if (loading) {
+        return (<main><h1>Loading...</h1></main>)
     }
-
 
     return (
         <main>
             <div className="form-container">
                 <h1>Login</h1>
+
+                {error && (
+                    <div style={{
+                        padding: "10px 14px",
+                        backgroundColor: "#fee2e2",
+                        color: "#991b1b",
+                        borderRadius: "6px",
+                        marginBottom: "16px",
+                        fontSize: "0.9rem"
+                    }}>
+                        {error}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
                         <label htmlFor="email">Email</label>
                         <input
-                            onChange={(e) => { setEmail(e.target.value) }}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             type="email" id="email" name='email' placeholder='Enter email address' />
                     </div>
                     <div className="input-group">
                         <label htmlFor="password">Password</label>
                         <input
-                            onChange={(e) => { setPassword(e.target.value) }}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             type="password" id="password" name='password' placeholder='Enter password' />
                     </div>
-                    <button className='button primary-button' >Login</button>
+                    <button type="submit" className='button primary-button'>Login</button>
                 </form>
-                <p>Don't have an account? <Link to={"/register"} >Register</Link> </p>
+                <p style={{ marginTop: "16px" }}>Don't have an account? <Link to={"/register"}>Register</Link></p>
             </div>
         </main>
     )

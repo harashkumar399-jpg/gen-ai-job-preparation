@@ -2,6 +2,7 @@ const userModel = require("../models/user.model")
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const tokenBlacklistModel = require("../models/blacklist.model")
+const { sendWelcomeEmail } = require("../services/email.service")
 
 /**
  * @name registerUserController
@@ -9,51 +10,77 @@ const tokenBlacklistModel = require("../models/blacklist.model")
  * @access Public
  */
 async function registerUserController(req, res) {
+    try {
+        const { username, email, password } = req.body
 
-    const { username, email, password } = req.body
-
-    if (!username || !email || !password) {
-        return res.status(400).json({
-            message: "Please provide username, email and password"
-        })
-    }
-
-    const isUserAlreadyExists = await userModel.findOne({
-        $or: [ { username }, { email } ]
-    })
-
-    if (isUserAlreadyExists) {
-        return res.status(400).json({
-            message: "Account already exists with this email address or username"
-        })
-    }
-
-    const hash = await bcrypt.hash(password, 10)
-
-    const user = await userModel.create({
-        username,
-        email,
-        password: hash
-    })
-
-    const token = jwt.sign(
-        { id: user._id, username: user.username },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-    )
-
-    res.cookie("token", token)
-
-
-    res.status(201).json({
-        message: "User registered successfully",
-        user: {
-            id: user._id,
-            username: user.username,
-            email: user.email
+        if (!username || !email || !password) {
+            return res.status(400).json({
+                message: "Please provide username, email and password"
+            })
         }
-    })
 
+        const cleanEmail = email.trim().toLowerCase()
+        const cleanUsername = username.trim()
+
+        const isUsernameTaken = await userModel.findOne({
+            username: new RegExp(`^${cleanUsername}$`, "i")
+        })
+
+        if (isUsernameTaken) {
+            return res.status(400).json({
+                message: `Username "${cleanUsername}" is already taken. Please choose a different username.`
+            })
+        }
+
+        const isEmailTaken = await userModel.findOne({ email: cleanEmail })
+
+        if (isEmailTaken) {
+            return res.status(400).json({
+                message: `An account with email "${cleanEmail}" already exists. Please login instead.`
+            })
+        }
+
+        const hash = await bcrypt.hash(password, 10)
+
+        const user = await userModel.create({
+            username: cleanUsername,
+            email: cleanEmail,
+            password: hash
+        })
+
+        const token = jwt.sign(
+            { id: user._id, username: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        )
+
+        res.cookie("token", token)
+
+        // Send welcome email asynchronously
+        sendWelcomeEmail(user.email, user.username).catch((err) => {
+            console.error("Failed to send welcome email:", err)
+        })
+
+        return res.status(201).json({
+            message: "User registered successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        })
+    } catch (err) {
+        console.error("Register Error:", err)
+        if (err.code === 11000) {
+            const field = err.keyPattern?.username ? "Username" : "Email"
+            return res.status(400).json({
+                message: `${field} is already registered. Please choose another.`
+            })
+        }
+        return res.status(500).json({
+            message: err.message || "Internal server error during registration"
+        })
+    }
 }
 
 
@@ -63,40 +90,53 @@ async function registerUserController(req, res) {
  * @access Public
  */
 async function loginUserController(req, res) {
+    try {
+        const { email, password } = req.body
 
-    const { email, password } = req.body
-
-    const user = await userModel.findOne({ email })
-
-    if (!user) {
-        return res.status(400).json({
-            message: "Invalid email or password"
-        })
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password)
-
-    if (!isPasswordValid) {
-        return res.status(400).json({
-            message: "Invalid email or password"
-        })
-    }
-
-    const token = jwt.sign(
-        { id: user._id, username: user.username },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-    )
-
-    res.cookie("token", token)
-    res.status(200).json({
-        message: "User loggedIn successfully.",
-        user: {
-            id: user._id,
-            username: user.username,
-            email: user.email
+        if (!email || !password) {
+            return res.status(400).json({
+                message: "Please provide email and password"
+            })
         }
-    })
+
+        const cleanEmail = email.trim().toLowerCase()
+        const user = await userModel.findOne({ email: cleanEmail })
+
+        if (!user) {
+            return res.status(400).json({
+                message: "No account found with this email. Please register first."
+            })
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password)
+
+        if (!isPasswordValid) {
+            return res.status(400).json({
+                message: "Incorrect password. Please check your password and try again."
+            })
+        }
+
+        const token = jwt.sign(
+            { id: user._id, username: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        )
+
+        res.cookie("token", token)
+        return res.status(200).json({
+            message: "User loggedIn successfully.",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        })
+    } catch (err) {
+        console.error("Login Error:", err)
+        return res.status(500).json({
+            message: err.message || "Internal server error during login"
+        })
+    }
 }
 
 
@@ -106,17 +146,24 @@ async function loginUserController(req, res) {
  * @access public
  */
 async function logoutUserController(req, res) {
-    const token = req.cookies.token
+    try {
+        const token = req.cookies.token
 
-    if (token) {
-        await tokenBlacklistModel.create({ token })
+        if (token) {
+            await tokenBlacklistModel.create({ token })
+        }
+
+        res.clearCookie("token")
+
+        return res.status(200).json({
+            message: "User logged out successfully"
+        })
+    } catch (err) {
+        console.error("Logout Error:", err)
+        return res.status(500).json({
+            message: err.message || "Internal server error during logout"
+        })
     }
-
-    res.clearCookie("token")
-
-    res.status(200).json({
-        message: "User logged out successfully"
-    })
 }
 
 /**
@@ -125,22 +172,28 @@ async function logoutUserController(req, res) {
  * @access private
  */
 async function getMeController(req, res) {
+    try {
+        const user = await userModel.findById(req.user.id)
 
-    const user = await userModel.findById(req.user.id)
-
-
-
-    res.status(200).json({
-        message: "User details fetched successfully",
-        user: {
-            id: user._id,
-            username: user.username,
-            email: user.email
+        if (!user) {
+            return res.status(440).json({ message: "User not found" })
         }
-    })
 
+        return res.status(200).json({
+            message: "User details fetched successfully",
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email
+            }
+        })
+    } catch (err) {
+        console.error("GetMe Error:", err)
+        return res.status(500).json({
+            message: err.message || "Internal server error"
+        })
+    }
 }
-
 
 
 module.exports = {

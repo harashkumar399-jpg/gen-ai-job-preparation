@@ -1,4 +1,4 @@
-import { getAllInterviewReports, generateInterviewReport, getInterviewReportById, generateResumePdf } from "../services/interview.api"
+import { getAllInterviewReports, generateInterviewReport, getInterviewReportById, generateResumePdf, sendReportEmailApi } from "../services/interview.api"
 import { useContext, useEffect } from "react"
 import { InterviewContext } from "../interview.context"
 import { useParams } from "react-router"
@@ -17,17 +17,19 @@ export const useInterview = () => {
 
     const generateReport = async ({ jobDescription, selfDescription, resumeFile }) => {
         setLoading(true)
-        let response = null
         try {
-            response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
-            setReport(response.interviewReport)
+            const response = await generateInterviewReport({ jobDescription, selfDescription, resumeFile })
+            if (response && response.interviewReport) {
+                setReport(response.interviewReport)
+                return { success: true, report: response.interviewReport }
+            }
+            return { success: false, error: "Failed to generate report" }
         } catch (error) {
-            console.log(error)
+            const msg = error.response?.data?.message || error.message || "Failed to generate interview plan"
+            return { success: false, error: msg }
         } finally {
             setLoading(false)
         }
-
-        return response.interviewReport
     }
 
     const getReportById = async (interviewId) => {
@@ -41,7 +43,7 @@ export const useInterview = () => {
         } finally {
             setLoading(false)
         }
-        return response.interviewReport
+        return response?.interviewReport
     }
 
     const getReports = async () => {
@@ -56,7 +58,7 @@ export const useInterview = () => {
             setLoading(false)
         }
 
-        return response.interviewReports
+        return response?.interviewReports
     }
 
     const getResumePdf = async (interviewReportId) => {
@@ -78,6 +80,15 @@ export const useInterview = () => {
         }
     }
 
+    const sendEmailReport = async (id) => {
+        try {
+            const data = await sendReportEmailApi(id)
+            return { success: true, message: data.message }
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message || "Failed to send email" }
+        }
+    }
+
     useEffect(() => {
         if (interviewId) {
             getReportById(interviewId)
@@ -86,6 +97,6 @@ export const useInterview = () => {
         }
     }, [ interviewId ])
 
-    return { loading, report, reports, generateReport, getReportById, getReports, getResumePdf }
+    return { loading, report, reports, generateReport, getReportById, getReports, getResumePdf, sendEmailReport }
 
 }
