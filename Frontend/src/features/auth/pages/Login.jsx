@@ -11,6 +11,7 @@ const Login = () => {
     const [ email, setEmail ] = useState("")
     const [ password, setPassword ] = useState("")
     const [ error, setError ] = useState("")
+    const [ isSubmitting, setIsSubmitting ] = useState(false)
     const successMsg = location.state?.message
 
     const handleSubmit = async (e) => {
@@ -22,11 +23,16 @@ const Login = () => {
             return
         }
 
-        const res = await handleLogin({ email, password })
-        if (res && res.success) {
-            navigate('/')
-        } else {
-            setError(res?.error || "Login failed. Please check your credentials.")
+        setIsSubmitting(true)
+        try {
+            const res = await handleLogin({ email, password })
+            if (res && res.success) {
+                navigate('/')
+            } else {
+                setError(res?.error || "Login failed. Please check your credentials.")
+            }
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -83,7 +89,9 @@ const Login = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             type="password" id="password" name='password' placeholder='Enter password' />
                     </div>
-                    <button type="submit" className='button primary-button'>Login</button>
+                    <button type="submit" disabled={isSubmitting} className='button primary-button'>
+                        {isSubmitting ? "Logging in..." : "Login"}
+                    </button>
                 </form>
                 <p style={{ marginTop: "16px" }}>Don't have an account? <Link to={"/register"}>Register</Link></p>
             </div>

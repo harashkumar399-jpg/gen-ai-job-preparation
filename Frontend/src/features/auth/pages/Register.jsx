@@ -10,6 +10,7 @@ const Register = () => {
     const [ password, setPassword ] = useState("")
     const [ error, setError ] = useState("")
     const [ successMsg, setSuccessMsg ] = useState("")
+    const [ isSubmitting, setIsSubmitting ] = useState(false)
 
     const { loading, handleRegister } = useAuth()
 
@@ -23,14 +24,19 @@ const Register = () => {
             return
         }
 
-        const res = await handleRegister({ username, email, password })
-        if (res && res.success) {
-            setSuccessMsg("✓ User registered successfully! Redirecting to login...")
-            setTimeout(() => {
-                navigate("/login", { state: { message: "User registered successfully! Please login with your credentials." } })
-            }, 1200)
-        } else {
-            setError(res?.error || "Registration failed. Please try again.")
+        setIsSubmitting(true)
+        try {
+            const res = await handleRegister({ username, email, password })
+            if (res && res.success) {
+                setSuccessMsg("✓ User registered successfully! Redirecting to login...")
+                setTimeout(() => {
+                    navigate("/login", { state: { message: "User registered successfully! Please login with your credentials." } })
+                }, 1200)
+            } else {
+                setError(res?.error || "Registration failed. Please try again.")
+            }
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -95,7 +101,9 @@ const Register = () => {
                             type="password" id="password" name='password' placeholder='Enter password' />
                     </div>
 
-                    <button type="submit" className='button primary-button'>Register</button>
+                    <button type="submit" disabled={isSubmitting} className='button primary-button'>
+                        {isSubmitting ? "Registering..." : "Register"}
+                    </button>
                 </form>
 
                 <p style={{ marginTop: "16px" }}>Already have an account? <Link to={"/login"}>Login</Link></p>
