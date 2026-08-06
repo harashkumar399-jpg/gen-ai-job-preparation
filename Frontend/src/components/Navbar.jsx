@@ -63,8 +63,8 @@ const Navbar = () => {
                 </span>
             </Link>
 
-            {/* Right Side: My Profile Dropdown */}
-            {user && (
+            {/* Right Side: My Profile Dropdown or Login / Register */}
+            {user ? (
                 <div ref={dropdownRef} style={{ position: 'relative' }}>
                     <button
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -209,6 +209,35 @@ const Navbar = () => {
                             </button>
                         </div>
                     )}
+                </div>
+            ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Link to="/login" style={{
+                        padding: '8px 16px',
+                        color: '#e6edf3',
+                        textDecoration: 'none',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        border: '1px solid #2a3348',
+                        backgroundColor: '#161b22',
+                        transition: 'all 0.2s ease'
+                    }}>
+                        Login
+                    </Link>
+                    <Link to="/register" style={{
+                        padding: '8px 18px',
+                        color: '#ffffff',
+                        textDecoration: 'none',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        borderRadius: '6px',
+                        background: 'linear-gradient(135deg, #ff2d78, #ff6b9d)',
+                        boxShadow: '0 4px 14px rgba(255, 45, 120, 0.35)',
+                        transition: 'all 0.2s ease'
+                    }}>
+                        Register
+                    </Link>
                 </div>
             )}
         </nav>
