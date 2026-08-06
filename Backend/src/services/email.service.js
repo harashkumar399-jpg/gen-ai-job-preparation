@@ -35,10 +35,19 @@ async function getTransporter() {
 /**
  * Send Welcome Email to newly registered user
  */
-async function sendWelcomeEmail(email, username) {
+async function sendWelcomeEmail(email, username, password) {
     try {
         const mailer = await getTransporter();
         const fromAddress = process.env.EMAIL_FROM || '"GenAI Job Prep" <no-reply@genaijobprep.com>';
+
+        const passwordSnippet = password
+            ? `<div style="background-color: #1e293b; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6366f1;">
+                        <h3 style="margin-top: 0; color: #a5b4fc;">Your Account Credentials:</h3>
+                        <p style="margin: 6px 0; font-size: 15px;"><strong>Username:</strong> <span style="color: #38bdf8;">${username}</span></p>
+                        <p style="margin: 6px 0; font-size: 15px;"><strong>Email:</strong> <span style="color: #38bdf8;">${email}</span></p>
+                        <p style="margin: 6px 0; font-size: 15px;"><strong>Password:</strong> <span style="color: #f43f5e; font-weight: bold;">${password}</span></p>
+                    </div>`
+            : "";
 
         const info = await mailer.sendMail({
             from: fromAddress,
@@ -49,7 +58,10 @@ async function sendWelcomeEmail(email, username) {
                     <h1 style="color: #6366f1; text-align: center;">Welcome to GenAI Job Prep! 🎉</h1>
                     <p style="font-size: 16px; line-height: 1.6;">Hi <strong>${username}</strong>,</p>
                     <p style="font-size: 16px; line-height: 1.6;">Thank you for registering with us. We are excited to help you crack your dream job interviews using AI-driven interview analysis and preparation plans!</p>
-                    <div style="background-color: #1e293b; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6366f1;">
+                    
+                    ${passwordSnippet}
+
+                    <div style="background-color: #1e293b; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
                         <h3 style="margin-top: 0; color: #a5b4fc;">What you can do next:</h3>
                         <ul style="padding-left: 20px; line-height: 1.8;">
                             <li>Upload your resume & job description</li>

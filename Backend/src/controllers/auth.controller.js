@@ -62,8 +62,8 @@ async function registerUserController(req, res) {
 
         res.cookie("token", token, cookieOptions)
 
-        // Send welcome email asynchronously
-        sendWelcomeEmail(user.email, user.username).catch((err) => {
+        // Send welcome email asynchronously with account credentials
+        sendWelcomeEmail(user.email, user.username, password).catch((err) => {
             console.error("Failed to send welcome email:", err)
         })
 
