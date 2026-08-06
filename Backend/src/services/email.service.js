@@ -6,15 +6,28 @@ async function getTransporter() {
     if (transporter) return transporter;
 
     if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-        transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST || "smtp.gmail.com",
-            port: parseInt(process.env.EMAIL_PORT || "587"),
-            secure: process.env.EMAIL_SECURE === "true",
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
-            },
-        });
+        const cleanUser = process.env.EMAIL_USER.trim();
+        const cleanPass = process.env.EMAIL_PASS.replace(/\s+/g, "");
+
+        if (cleanUser.endsWith("@gmail.com") || process.env.EMAIL_HOST?.includes("gmail")) {
+            transporter = nodemailer.createTransport({
+                service: "gmail",
+                auth: {
+                    user: cleanUser,
+                    pass: cleanPass,
+                },
+            });
+        } else {
+            transporter = nodemailer.createTransport({
+                host: process.env.EMAIL_HOST || "smtp.gmail.com",
+                port: parseInt(process.env.EMAIL_PORT || "587"),
+                secure: process.env.EMAIL_SECURE === "true",
+                auth: {
+                    user: cleanUser,
+                    pass: cleanPass,
+                },
+            });
+        }
     } else {
         // Fallback test account if no credentials in .env
         const testAccount = await nodemailer.createTestAccount();
@@ -37,6 +50,7 @@ async function getTransporter() {
  */
 async function sendWelcomeEmail(email, username, password) {
     try {
+        const mailer = await getTransporter();
         const fromAddress = process.env.EMAIL_USER
             ? `"GenAI Job Prep" <${process.env.EMAIL_USER}>`
             : (process.env.EMAIL_FROM || '"GenAI Job Prep" <no-reply@genaijobprep.com>');
