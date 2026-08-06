@@ -27,7 +27,6 @@ export const useAuth = () => {
         try {
             const data = await register({ username, email, password })
             if (data && data.user) {
-                setUser(data.user)
                 return { success: true, user: data.user }
             }
             return { success: false, error: "Registration failed" }
