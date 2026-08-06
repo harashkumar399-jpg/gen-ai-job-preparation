@@ -1,15 +1,17 @@
 import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router'
+import { useNavigate, Link, useLocation } from 'react-router'
 import "../auth.form.scss"
 import { useAuth } from '../hooks/useAuth'
 
 const Login = () => {
     const { loading, handleLogin } = useAuth()
     const navigate = useNavigate()
+    const location = useLocation()
 
     const [ email, setEmail ] = useState("")
     const [ password, setPassword ] = useState("")
     const [ error, setError ] = useState("")
+    const successMsg = location.state?.message
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -36,6 +38,22 @@ const Login = () => {
         <main>
             <div className="form-container">
                 <h1>Login</h1>
+
+                {successMsg && (
+                    <div style={{
+                        padding: "12px 16px",
+                        backgroundColor: "#dcfce7",
+                        color: "#15803d",
+                        border: "1px solid #86efac",
+                        borderRadius: "6px",
+                        marginBottom: "16px",
+                        fontSize: "0.95rem",
+                        fontWeight: "600",
+                        textAlign: "center"
+                    }}>
+                        {successMsg}
+                    </div>
+                )}
 
                 {error && (
                     <div style={{

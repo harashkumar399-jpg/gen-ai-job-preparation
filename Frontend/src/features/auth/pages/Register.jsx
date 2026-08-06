@@ -25,10 +25,10 @@ const Register = () => {
 
         const res = await handleRegister({ username, email, password })
         if (res && res.success) {
-            setSuccessMsg("✓ User registered successfully! Redirecting...")
+            setSuccessMsg("✓ User registered successfully! Redirecting to login...")
             setTimeout(() => {
-                navigate("/")
-            }, 1500)
+                navigate("/login", { state: { message: "User registered successfully! Please login with your credentials." } })
+            }, 1200)
         } else {
             setError(res?.error || "Registration failed. Please try again.")
         }
