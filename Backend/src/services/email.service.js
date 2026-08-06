@@ -37,10 +37,9 @@ async function getTransporter() {
  */
 async function sendWelcomeEmail(email, username, password) {
     try {
-        const defaultFrom = process.env.EMAIL_USER
+        const fromAddress = process.env.EMAIL_USER
             ? `"GenAI Job Prep" <${process.env.EMAIL_USER}>`
-            : '"GenAI Job Prep" <no-reply@genaijobprep.com>';
-        const fromAddress = process.env.EMAIL_FROM || defaultFrom;
+            : (process.env.EMAIL_FROM || '"GenAI Job Prep" <no-reply@genaijobprep.com>');
 
         const passwordSnippet = password
             ? `<div style="background-color: #1e293b; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6366f1;">
@@ -96,10 +95,9 @@ async function sendWelcomeEmail(email, username, password) {
 async function sendReportEmail(email, username, report) {
     try {
         const mailer = await getTransporter();
-        const defaultFrom = process.env.EMAIL_USER
+        const fromAddress = process.env.EMAIL_USER
             ? `"GenAI Job Prep" <${process.env.EMAIL_USER}>`
-            : '"GenAI Job Prep" <no-reply@genaijobprep.com>';
-        const fromAddress = process.env.EMAIL_FROM || defaultFrom;
+            : (process.env.EMAIL_FROM || '"GenAI Job Prep" <no-reply@genaijobprep.com>');
 
         const techQuestionsList = (report.technicalQuestions || [])
             .map(
