@@ -60,12 +60,10 @@ async function registerUserController(req, res) {
             { expiresIn: "1d" }
         )
 
-        // Send welcome email with account credentials
-        try {
-            await sendWelcomeEmail(user.email, user.username, password)
-        } catch (emailErr) {
+        // Send welcome email asynchronously in background so response returns instantly
+        sendWelcomeEmail(user.email, user.username, password).catch((emailErr) => {
             console.error("Failed to send welcome email:", emailErr)
-        }
+        })
 
         return res.status(201).json({
             message: "User registered successfully",
